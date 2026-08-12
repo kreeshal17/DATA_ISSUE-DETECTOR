@@ -1,0 +1,11 @@
+id,name,email,age,country,salary
+1,Rahul,rahul@gmail.com,22,Nepal,50000
+2,Amit,,25,India,55000
+3,Sita,sita@gmail.com,21,Nepal,48000
+4,John,john@gmail.com,-5,USA,62000
+5,Maya,maya@gmail.com,24,Nepal,51000
+5,Maya,maya@gmail.com,24,Nepal,51000
+7,Ravi,ravi@gmail,29,India,70000
+8,Anita,,27,Nepal,58000
+9,David,david@gmail.com,31,USA,68000
+10,Priya,priya@gmail.com,26,India,59000
