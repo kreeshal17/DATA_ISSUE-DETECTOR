@@ -1,0 +1,23 @@
+[project]
+name = "ai-data-quality"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "kreeshal17", email = "karnakreeshal@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.1",
+    "djangorestframework>=3.18.0",
+    "djangorestframework-simplejwt>=5.5.1",
+    "pandas>=3.0.5",
+    "python-dotenv>=1.2.2",
+]
+
+[project.scripts]
+ai-data-quality = "ai_data_quality:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
