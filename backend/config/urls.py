@@ -24,4 +24,8 @@ urlpatterns = [
     path( "api/datasets/",
     include("profiling.urls")
 ),
+     path(
+        "api/datasets/",
+        include("issues.urls")
+    ),
 ]
