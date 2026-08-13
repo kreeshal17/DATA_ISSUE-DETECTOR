@@ -25,6 +25,10 @@ class IssueDetector:
             self.detect_duplicates()
         )
 
+        issues.extend(
+            self.detect_anomalies()
+        )
+
         return issues
 
     def detect_missing_values(self):
@@ -78,5 +82,56 @@ class IssueDetector:
             )
 
             issues.append(issue)
+
+        return issues
+
+    def detect_anomalies(self):
+
+        issues = []
+
+        numeric_columns = self.df.select_dtypes(
+            include="number"
+        ).columns
+
+        for column in numeric_columns:
+
+            values = self.df[column].dropna()
+
+            if values.empty:
+                continue
+
+            q1 = values.quantile(0.25)
+            q3 = values.quantile(0.75)
+
+            iqr = q3 - q1
+
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+
+            anomaly_rows = self.df[
+                (self.df[column] < lower_bound)
+                | (self.df[column] > upper_bound)
+            ].index.tolist()
+
+            for row in anomaly_rows:
+
+                value = self.df.loc[row, column]
+
+                issue = Issue.objects.create(
+                    dataset=self.dataset,
+                    issue_type=Issue.IssueType.ANOMALY,
+                    column=column,
+                    row=row,
+                    severity=Issue.Severity.HIGH,
+                    description=f"Anomalous value detected in {column}",
+                    details={
+                        "column": column,
+                        "value": value,
+                        "lower_bound": lower_bound,
+                        "upper_bound": upper_bound
+                    }
+                )
+
+                issues.append(issue)
 
         return issues
