@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from datasets.models import Dataset
+
 from .models import Issue
 from .serializers import IssueSerializer
 
@@ -58,11 +59,23 @@ class AnalyzeIssueView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        graph.invoke({
-            "issue_id": issue.id,
-            "issue": "",
-            "analysis": None
-        })
+        try:
+
+            graph.invoke({
+                "issue_id": issue.id,
+                "issue": "",
+                "analysis": None
+            })
+
+        except Exception as error:
+
+            return Response(
+                {
+                    "error": "AI analysis failed",
+                    "details": str(error)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         issue.refresh_from_db()
 

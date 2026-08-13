@@ -5,9 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from issues.models import Issue
 from issues.services import IssueDetector
+
 from .models import Dataset
 from .serializers import DatasetSerializer
+
 from profiling.services import ProfilerService
+
 from ai_analysis.graph import graph
 
 
@@ -28,6 +31,7 @@ class DatasetView(APIView):
             )
 
             ProfilerService(dataset).run()
+
             IssueDetector(dataset).run()
 
             return Response(
@@ -77,8 +81,11 @@ class AnalyzeDatasetView(APIView):
         )
 
         if not issues.exists():
+
             return Response(
-                {"error": "No issues found for this dataset"},
+                {
+                    "error": "No issues found for this dataset"
+                },
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -86,11 +93,24 @@ class AnalyzeDatasetView(APIView):
 
         for issue in issues:
 
-            graph.invoke({
-                "issue_id": issue.id,
-                "issue": "",
-                "analysis": None
-            })
+            try:
+
+                graph.invoke({
+                    "issue_id": issue.id,
+                    "issue": "",
+                    "analysis": None
+                })
+
+            except Exception as error:
+
+                return Response(
+                    {
+                        "error": "AI analysis failed",
+                        "issue_id": issue.id,
+                        "details": str(error)
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             issue.refresh_from_db()
 

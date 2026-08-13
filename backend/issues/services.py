@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 
 from .models import Issue
@@ -27,6 +29,10 @@ class IssueDetector:
 
         issues.extend(
             self.detect_anomalies()
+        )
+
+        issues.extend(
+            self.detect_invalid_formats()
         )
 
         return issues
@@ -105,6 +111,9 @@ class IssueDetector:
 
             iqr = q3 - q1
 
+            if iqr == 0:
+                continue
+
             lower_bound = q1 - 1.5 * iqr
             upper_bound = q3 + 1.5 * iqr
 
@@ -135,3 +144,49 @@ class IssueDetector:
                 issues.append(issue)
 
         return issues
+
+    def detect_invalid_formats(self):
+
+        issues = []
+
+        for column in self.df.columns:
+
+            column_name = column.lower().strip()
+
+            if "email" not in column_name:
+                continue
+
+            for row, value in self.df[column].items():
+
+                if pd.isna(value):
+                    continue
+
+                value = str(value).strip()
+
+                if not self.is_valid_email(value):
+
+                    issue = Issue.objects.create(
+                        dataset=self.dataset,
+                        issue_type=Issue.IssueType.INVALID_FORMAT,
+                        column=column,
+                        row=row,
+                        severity=Issue.Severity.MEDIUM,
+                        description=f"Invalid email format detected in {column}",
+                        details={
+                            "column": column,
+                            "original_value": value
+                        }
+                    )
+
+                    issues.append(issue)
+
+        return issues
+
+    @staticmethod
+    def is_valid_email(value):
+
+        pattern = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+        return bool(
+            re.match(pattern, value)
+        )

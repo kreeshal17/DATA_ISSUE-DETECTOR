@@ -9,6 +9,7 @@ from .views import (
 
 
 urlpatterns = [
+
     path(
         "<slug:slug>/issues/",
         DatasetIssueView.as_view(),
