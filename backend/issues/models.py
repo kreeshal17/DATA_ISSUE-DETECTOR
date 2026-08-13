@@ -25,6 +25,25 @@ class Issue(models.Model):
         max_length=30,
         choices=IssueType.choices
     )
+    ai_explanation = models.TextField(
+    null=True,
+    blank=True
+)
+
+    ai_root_cause = models.TextField(
+    null=True,
+    blank=True
+)
+
+    ai_recommendation = models.TextField(
+    null=True,
+    blank=True
+)
+
+    ai_confidence = models.FloatField(
+    null=True,
+    blank=True
+)
 
     column = models.CharField(
         max_length=255,
