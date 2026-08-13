@@ -1,15 +1,34 @@
 from typing import TypedDict
 
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
 
 from issues.models import Issue
 from .llm import llm
 
 
+class AIAnalysis(BaseModel):
+    explanation: str = Field(
+        description="Explain the data quality issue clearly"
+    )
+
+    root_cause: str = Field(
+        description="Likely reason why this issue occurred"
+    )
+
+    recommendation: str = Field(
+        description="Recommended action to fix or handle the issue"
+    )
+
+    confidence: float = Field(
+        description="Confidence in the analysis between 0 and 1"
+    )
+
+
 class AnalysisState(TypedDict):
     issue_id: int
     issue: str
-    analysis: str
+    analysis: AIAnalysis | None
 
 
 def load_issue(state: AnalysisState):
@@ -34,28 +53,47 @@ def load_issue(state: AnalysisState):
 
 def analyze_issue(state: AnalysisState):
 
+    structured_llm = llm.with_structured_output(
+        AIAnalysis
+    )
+
     prompt = f"""
     You are a data quality analyst.
 
-    Analyze the following data quality issue:
+    Analyze this data quality issue:
 
     {state["issue"]}
 
-    Explain:
-    1. Why this is a problem
-    2. How serious the issue is
-    3. What could have caused it
-    4. What should be done to fix it
-
-    Give a clear answer suitable for a user viewing a
-    data quality dashboard.
+    Provide:
+    1. A clear explanation
+    2. The likely root cause
+    3. A recommendation to fix it
+    4. Your confidence from 0 to 1
     """
 
-    response = llm.invoke(prompt)
+    response = structured_llm.invoke(prompt)
 
     return {
-        "analysis": response.content
+        "analysis": response
     }
+
+
+def save_analysis(state: AnalysisState):
+
+    issue = Issue.objects.get(
+        id=state["issue_id"]
+    )
+
+    analysis = state["analysis"]
+
+    issue.ai_explanation = analysis.explanation
+    issue.ai_root_cause = analysis.root_cause
+    issue.ai_recommendation = analysis.recommendation
+    issue.ai_confidence = analysis.confidence
+
+    issue.save()
+
+    return {}
 
 
 graph_builder = StateGraph(AnalysisState)
@@ -71,6 +109,11 @@ graph_builder.add_node(
     analyze_issue
 )
 
+graph_builder.add_node(
+    "save_analysis",
+    save_analysis
+)
+
 
 graph_builder.add_edge(
     START,
@@ -84,6 +127,11 @@ graph_builder.add_edge(
 
 graph_builder.add_edge(
     "analyze_issue",
+    "save_analysis"
+)
+
+graph_builder.add_edge(
+    "save_analysis",
     END
 )
 
