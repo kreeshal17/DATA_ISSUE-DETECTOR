@@ -93,57 +93,57 @@ class IssueDetector:
 
     def detect_anomalies(self):
 
-        issues = []
+     issues = []
 
-        numeric_columns = self.df.select_dtypes(
-            include="number"
-        ).columns
+     numeric_columns = self.df.select_dtypes(
+        include="number"
+    ).columns
 
-        for column in numeric_columns:
+     for column in numeric_columns:
 
-            values = self.df[column].dropna()
+        values = self.df[column].dropna()
 
-            if values.empty:
-                continue
+        if values.empty:
+            continue
 
-            q1 = values.quantile(0.25)
-            q3 = values.quantile(0.75)
+        q1 = values.quantile(0.25)
+        q3 = values.quantile(0.75)
 
-            iqr = q3 - q1
+        iqr = q3 - q1
 
-            if iqr == 0:
-                continue
+        if iqr == 0:
+            continue
 
-            lower_bound = q1 - 1.5 * iqr
-            upper_bound = q3 + 1.5 * iqr
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
 
-            anomaly_rows = self.df[
-                (self.df[column] < lower_bound)
-                | (self.df[column] > upper_bound)
-            ].index.tolist()
+        anomaly_rows = self.df[
+            (self.df[column] < lower_bound)
+            | (self.df[column] > upper_bound)
+        ].index.tolist()
 
-            for row in anomaly_rows:
+        for row in anomaly_rows:
 
-                value = self.df.loc[row, column]
+            value = self.df.loc[row, column]
 
-                issue = Issue.objects.create(
-                    dataset=self.dataset,
-                    issue_type=Issue.IssueType.ANOMALY,
-                    column=column,
-                    row=row,
-                    severity=Issue.Severity.HIGH,
-                    description=f"Anomalous value detected in {column}",
-                    details={
-                        "column": column,
-                        "value": value,
-                        "lower_bound": lower_bound,
-                        "upper_bound": upper_bound
-                    }
-                )
+            issue = Issue.objects.create(
+                dataset=self.dataset,
+                issue_type=Issue.IssueType.ANOMALY,
+                column=column,
+                row=int(row),
+                severity=Issue.Severity.HIGH,
+                description=f"Anomalous value detected in {column}",
+                details={
+                    "column": str(column),
+                    "value": value.item(),
+                    "lower_bound": lower_bound.item(),
+                    "upper_bound": upper_bound.item()
+                }
+            )
 
-                issues.append(issue)
+            issues.append(issue)
 
-        return issues
+     return issues
 
     def detect_invalid_formats(self):
 

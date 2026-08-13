@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.db import models
-
 from django.utils.text import slugify
+
+
 class Dataset(models.Model):
 
     class Status(models.TextChoices):
@@ -15,13 +16,18 @@ class Dataset(models.Model):
         on_delete=models.CASCADE,
         related_name="datasets"
     )
-    slug = models.SlugField(
-    null=True,
-    blank=True
-)
-    name = models.CharField(max_length=255)
 
-    file = models.FileField(upload_to="datasets/")
+    slug = models.SlugField(
+        unique=True
+    )
+
+    name = models.CharField(
+        max_length=255
+    )
+
+    file = models.FileField(
+        upload_to="datasets/"
+    )
 
     status = models.CharField(
         max_length=20,
@@ -29,25 +35,46 @@ class Dataset(models.Model):
         default=Status.UPLOADED
     )
 
-    row_count = models.PositiveIntegerField(default=0)
+    row_count = models.PositiveIntegerField(
+        default=0
+    )
 
-    column_count = models.PositiveIntegerField(default=0)
+    column_count = models.PositiveIntegerField(
+        default=0
+    )
 
     quality_score = models.FloatField(
         null=True,
         blank=True
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    
-    def save(self,*args, **kwargs):
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    def save(self, *args, **kwargs):
+
         if not self.slug:
-            self.slug=slugify(self.name)
-            super().save(*args,**kwargs)
+
+            base_slug = slugify(self.name)
+
+            slug = base_slug
+            counter = 1
+
+            while Dataset.objects.filter(
+                slug=slug
+            ).exists():
+
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
-    
-    
